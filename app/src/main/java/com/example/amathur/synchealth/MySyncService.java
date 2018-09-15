@@ -6,7 +6,6 @@ import android.app.job.JobScheduler;
 import android.app.job.JobService;
 import android.content.ComponentName;
 import android.content.Context;
-import android.os.Handler;
 import android.util.Log;
 
 public class MySyncService extends JobService{
@@ -14,10 +13,9 @@ public class MySyncService extends JobService{
     private static final String APP_TAG = "SYNCHEALTH-SYNCSERVICE";
 
     private static JobInfo jobInfo;
-    final Handler mHandler = new Handler();
     final Runnable mWorker = () -> {
-        MainActivity.update_stepcount();
-        MainActivity.update_hr();
+        Update.update_stepcount();
+        Update.update_hr();
     };
 
     static {
@@ -29,7 +27,7 @@ public class MySyncService extends JobService{
     @Override
     public boolean onStartJob(JobParameters params) {
         Log.d(APP_TAG, "Sync Job has been scheduled");
-        mHandler.post(mWorker);
+        SyncThread.mHandler.post(mWorker);
         return true;
     }
 

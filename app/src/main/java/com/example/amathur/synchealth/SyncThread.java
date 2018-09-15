@@ -5,14 +5,14 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
-class SamsungThread extends Thread {
+class SyncThread extends Thread {
     public static Handler mHandler;
     public void run() {
-        this.setName("SamsungThread");
+        this.setName("SyncThread");
         Looper.prepare();
         mHandler = new Handler() {
             public void handleMessage(Message msg) {
-                Log.d("SAMSUNGTHREAD", msg.toString());
+                Log.d("SYNCTHREAD", msg.toString());
             }
         };
         Looper.loop();

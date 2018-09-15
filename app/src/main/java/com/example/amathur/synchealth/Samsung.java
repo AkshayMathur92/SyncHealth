@@ -20,7 +20,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Samsung {
@@ -33,7 +32,7 @@ public class Samsung {
     private HealthDataService healthDataService;
     private Activity mInstance;
     private String APP_TAG = "SYNCHEALTH-SAMSUNG";
-    SamsungThread sThread = new SamsungThread();
+    SyncThread sThread = new SyncThread();
 
     Samsung(Activity mInstance){
         this.mInstance = mInstance;
