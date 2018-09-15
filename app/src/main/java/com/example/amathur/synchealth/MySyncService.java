@@ -14,8 +14,7 @@ public class MySyncService extends JobService{
 
     private static JobInfo jobInfo;
     final Runnable mWorker = () -> {
-        Update.update_stepcount();
-        Update.update_hr();
+        Update.update();
     };
 
     static {

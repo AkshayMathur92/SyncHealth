@@ -18,6 +18,7 @@ import com.google.android.gms.tasks.Task;
 import java.util.ArrayList;
 import java.util.List;
 
+import static android.icu.lang.UCharacter.GraphemeClusterBreak.T;
 import static com.google.android.gms.fitness.data.DataSource.TYPE_RAW;
 
 public class Google {
@@ -28,8 +29,11 @@ public class Google {
     String APP_TAG = "SYNCHEALTH-GOOGLE";
     Activity mInstance;
     HistoryClient historyClient;
-    public static DataSource stepdataSource ;
+    public static DataSource stepDataSource;
     public static DataSource heartrateDataSource;
+    public static DataSource calorieDataSource;
+    public static DataSource distanceDataSource;
+    public static DataSource speedDataSource;
 
     Google(Activity mInstance, Bundle savedInstanceState){
         this.mInstance = mInstance;
@@ -43,6 +47,9 @@ public class Google {
                     .addDataType(DataType.TYPE_STEP_COUNT_DELTA, FitnessOptions.ACCESS_WRITE)
                     .addDataType(DataType.AGGREGATE_HEART_RATE_SUMMARY, FitnessOptions.ACCESS_WRITE)
                     .addDataType(DataType.TYPE_HEART_RATE_BPM, FitnessOptions.ACCESS_WRITE)
+                    .addDataType(DataType.TYPE_CALORIES_EXPENDED, FitnessOptions.ACCESS_WRITE)
+                    .addDataType(DataType.TYPE_DISTANCE_DELTA, FitnessOptions.ACCESS_WRITE)
+                    .addDataType(DataType.TYPE_SPEED, FitnessOptions.ACCESS_WRITE)
                     .build();
 
             if (!GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(mInstance), fitnessOptions)) {
@@ -54,7 +61,7 @@ public class Google {
             }
             historyClient = Fitness.getHistoryClient(mInstance, GoogleSignIn.getLastSignedInAccount(mInstance));
 
-            stepdataSource = (new DataSource.Builder())
+            stepDataSource = (new DataSource.Builder())
                     .setAppPackageName(mInstance)
                     .setDataType(DataType.TYPE_STEP_COUNT_DELTA)
                     .setType(TYPE_RAW)
@@ -66,76 +73,69 @@ public class Google {
                     .setType(TYPE_RAW)
                     .build();
 
+            calorieDataSource = (new DataSource.Builder())
+                    .setAppPackageName(mInstance)
+                    .setDataType(DataType.TYPE_CALORIES_EXPENDED)
+                    .setType(TYPE_RAW)
+                    .build();
+
+            distanceDataSource = (new DataSource.Builder())
+                    .setAppPackageName(mInstance)
+                    .setDataType(DataType.TYPE_DISTANCE_DELTA)
+                    .setType(TYPE_RAW)
+                    .build();
+
+            speedDataSource = (new DataSource.Builder())
+                    .setAppPackageName(mInstance)
+                    .setDataType(DataType.TYPE_SPEED)
+                    .setType(TYPE_RAW)
+                    .build();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     public void addStepCountData(List<DataPoint> googledata) {
-
-        if(googledata.size() > 1000){
-            int total_steps = 0;
-            List<List<DataPoint>> list_list_dp = getBatches(googledata, 1000);
-            for(List<DataPoint> ldp : list_list_dp){
-                DataSet dataSet = DataSet.create(stepdataSource);
-                for(DataPoint d : googledata){
-                    try {
-                        dataSet.add(d);
-                        total_steps += d.getValue(Field.FIELD_STEPS).asInt();
-                    }catch (IllegalArgumentException e){
-                        Log.d(APP_TAG, e.getMessage() + " with Steps = " + d.getValue(Field.FIELD_STEPS).asInt());
-                    }
-                }
-                Log.d(APP_TAG, "Total Steps adding in Google Data Points = " + total_steps);
-                Task<Void> response = historyClient.insertData(dataSet);
-                response.addOnCompleteListener(task -> Log.d(APP_TAG, "Response of adding individual steps " + ((task.isSuccessful())?"true" : task.getException().toString())));
-            }
-        }
-        else{
-            int total_steps = 0;
-            DataSet dataSet = DataSet.create(stepdataSource);
-            for(DataPoint d : googledata){
-                try {
-                    dataSet.add(d);
-                    total_steps += d.getValue(Field.FIELD_STEPS).asInt();
-                }catch (IllegalArgumentException e){
-                    Log.d(APP_TAG, e.getMessage() + " with Steps = " + d.getValue(Field.FIELD_STEPS).asInt());
-                }
-            }
-            Log.d(APP_TAG, "Total Steps adding in Google Data Points = " + total_steps);
-            Task<Void> response = historyClient.insertData(dataSet);
-            response.addOnCompleteListener(task -> Log.d(APP_TAG, "Response of adding individual steps = " + task.isSuccessful() ));
-        }
+        addData(googledata, stepDataSource, " Step Count ");
     }
 
     public void addHeartRateData(List<DataPoint> googledata) {
+        addData(googledata, heartrateDataSource, " Heart Rate ");
+    }
 
-        if(googledata.size() > 1000){
-            List<List<DataPoint>> list_list_dp = getBatches(googledata, 1000);
-            for(List<DataPoint> ldp : list_list_dp){
-                DataSet dataSet = DataSet.create(heartrateDataSource);
-                for(DataPoint d : googledata){
-                    try {
-                        dataSet.add(d);
-                    }catch (IllegalArgumentException e){
-                        Log.d(APP_TAG, "Adding Heart Rate Data point exception " + e.getMessage() );
-                    }
-                }
-                Task<Void> response = historyClient.insertData(dataSet);
-                response.addOnCompleteListener(task -> Log.d(APP_TAG, "Response of adding HR data " + ((task.isSuccessful())?"true" : task.getException().toString())));
-            }
+    public void addDistanceData(List<DataPoint> googledata) {
+        addData(googledata, distanceDataSource, " Distance ");
+    }
+
+    public void addCalorieData(List<DataPoint> googledata) {
+        addData(googledata, calorieDataSource, " Calorie ");
+    }
+
+    public void addSpeedData(List<DataPoint> googledata) {
+        addData(googledata, speedDataSource, " Speed ");
+    }
+
+    public void addData(List<DataPoint> googledata, DataSource dataSource, String message){
+        List<List<DataPoint>> list_list_dp;
+        if(googledata.size() > 1000) {
+            list_list_dp = getBatches(googledata, 1000);
         }
         else{
-            DataSet dataSet = DataSet.create(heartrateDataSource);
-            for(DataPoint d : googledata){
+            list_list_dp = new ArrayList<>();
+            list_list_dp.add(googledata);
+        }
+        for(List<DataPoint> ldp : list_list_dp) {
+            DataSet dataSet = DataSet.create(dataSource);
+            for (DataPoint d : ldp) {
                 try {
                     dataSet.add(d);
-                }catch (IllegalArgumentException e){
-                    Log.d(APP_TAG, "Adding Heart Rate Data point exception " + e.getMessage() );
+                } catch (IllegalArgumentException e) {
+                    Log.d(APP_TAG, message + " Data point exception " + e.getMessage());
                 }
             }
             Task<Void> response = historyClient.insertData(dataSet);
-            response.addOnCompleteListener(task -> Log.d(APP_TAG, "Response of adding HR data " + ((task.isSuccessful())? "true" : task.getException().toString())));
+            response.addOnCompleteListener(task -> Log.d(APP_TAG, "Response of adding " + message + ((task.isSuccessful())? "true" : task.getException().toString())));
         }
     }
 
@@ -148,7 +148,6 @@ public class Google {
             batches.add(batch);
             i = i + nextInc;
         }
-
         return batches;
     }
 }

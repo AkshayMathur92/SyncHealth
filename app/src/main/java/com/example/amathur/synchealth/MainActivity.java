@@ -25,8 +25,7 @@ public class MainActivity
 
         sync_button = findViewById(R.id.sync_button);
         sync_button.setOnClickListener(v -> {
-            Update.update_stepcount();
-            Update.update_hr();
+            Update.update();
         });
 
         MySyncService.scheduleJob(this);
