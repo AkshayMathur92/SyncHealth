@@ -12,7 +12,6 @@ import com.google.android.gms.fitness.data.DataPoint;
 import com.google.android.gms.fitness.data.DataSet;
 import com.google.android.gms.fitness.data.DataSource;
 import com.google.android.gms.fitness.data.DataType;
-import com.google.android.gms.fitness.data.Field;
 import com.google.android.gms.tasks.Task;
 
 import java.lang.ref.WeakReference;
@@ -20,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static android.icu.lang.UCharacter.GraphemeClusterBreak.T;
 import static com.google.android.gms.fitness.data.DataSource.TYPE_RAW;
 
 class Google {
