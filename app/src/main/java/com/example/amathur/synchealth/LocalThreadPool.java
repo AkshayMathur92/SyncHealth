@@ -10,9 +10,9 @@ class LocalThreadPool {
     public static Handler syncHandler;
     public static Handler callbackHandler;
 
-    private static Thread syncThread;
+    private static final Thread syncThread;
 
-    private static Thread callbackThread;
+    private static final Thread callbackThread;
 
     static {
         syncThread = new Thread() {
@@ -20,11 +20,7 @@ class LocalThreadPool {
             @Override
             public void run() {
                 Looper.prepare();
-                syncHandler = new Handler() {
-                    public void handleMessage(Message msg) {
-                        Log.d("SYNCTHREAD", msg.toString());
-                    }
-                };
+                syncHandler = new Handler();
                 Looper.loop();
             }
         };
@@ -35,11 +31,7 @@ class LocalThreadPool {
             @Override
             public void run() {
                 Looper.prepare();
-                callbackHandler = new Handler() {
-                    public void handlexMessage(Message msg) {
-                        Log.d("CALLBACKTHREAD", msg.toString());
-                    }
-                };
+                callbackHandler = new Handler();
                 Looper.loop();
             }
         };

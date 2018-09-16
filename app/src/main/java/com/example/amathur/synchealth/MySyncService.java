@@ -14,8 +14,8 @@ public class MySyncService extends JobService{
 
     private static final String APP_TAG = "SYNCHEALTH-SYNCSERVICE";
 
-    private static JobInfo jobInfo;
-    final Runnable mWorker = Update::update;
+    private static final JobInfo jobInfo;
+    private final Runnable mWorker;
 
     static {
         ComponentName serviceComponent = new ComponentName("com.example.amathur.synchealth", MySyncService.class.getName());
@@ -23,6 +23,11 @@ public class MySyncService extends JobService{
                 .setPeriodic(1000 * 10)
                 .build();
     }
+
+    public MySyncService() {
+        mWorker = Update::update;
+    }
+
     @Override
     public boolean onStartJob(JobParameters params) {
         Log.d(APP_TAG, "Sync Job has been scheduled");

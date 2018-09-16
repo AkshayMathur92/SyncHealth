@@ -23,27 +23,25 @@ import java.util.Objects;
 import static android.icu.lang.UCharacter.GraphemeClusterBreak.T;
 import static com.google.android.gms.fitness.data.DataSource.TYPE_RAW;
 
-public class Google {
+class Google {
 
     //Google
     private static final String AUTH_PENDING = "auth_state_pending";
-    private boolean authInProgress = false;
-    private String APP_TAG = "SYNCHEALTH-GOOGLE";
-    private WeakReference<Activity> mInstance;
+    private final String APP_TAG = "SYNCHEALTH-GOOGLE";
     private HistoryClient historyClient;
     public static DataSource stepDataSource;
     public static DataSource heartrateDataSource;
     public static DataSource calorieDataSource;
     public static DataSource distanceDataSource;
     public static DataSource speedDataSource;
-    private int GOOGLE_PERMISSION = 347; // in octal 0533
+    private final int GOOGLE_PERMISSION = 347; // in octal 0533
 
     Google(Activity mInt, Bundle savedInstanceState){
-        mInstance = new WeakReference<>(mInt);
+        WeakReference<Activity> mInstance = new WeakReference<>(mInt);
         try {
 
             if (savedInstanceState != null) {
-                authInProgress = savedInstanceState.getBoolean(AUTH_PENDING);
+                boolean authInProgress = savedInstanceState.getBoolean(AUTH_PENDING);
             }
 
             FitnessOptions fitnessOptions = FitnessOptions.builder()

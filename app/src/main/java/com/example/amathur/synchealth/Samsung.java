@@ -21,15 +21,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class Samsung {
+class Samsung {
 
     //Samsung
     private HealthDataStore mStore;
     private HealthConnectionErrorResult mConnError;
-    private Set<HealthPermissionManager.PermissionKey> mKeySet;
+    private final Set<HealthPermissionManager.PermissionKey> mKeySet;
     private HealthResultHolder<HealthDataResolver.ReadResult> result;
-    private WeakReference<Activity> mInstance;
-    private String APP_TAG = "SYNCHEALTH-SAMSUNG";
+    private final WeakReference<Activity> mInstance;
+    private final String APP_TAG = "SYNCHEALTH-SAMSUNG";
 
     Samsung(Activity mInstance){
         this.mInstance = new WeakReference<>(mInstance);

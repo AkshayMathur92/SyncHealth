@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-public class Update {
+class Update {
 
     static Samsung samsung;
     static Google googleFit;

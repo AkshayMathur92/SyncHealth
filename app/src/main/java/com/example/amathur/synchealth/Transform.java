@@ -6,7 +6,7 @@ import com.samsung.android.sdk.healthdata.HealthData;
 
 import java.util.concurrent.TimeUnit;
 
-public class Transform {
+class Transform {
 
     static DataPoint convertstepsStoGdata (HealthData data){
 //        Log.d(APP_TAG, hd.getString("deviceuuid") + " steps = " + hd.getInt("count"));
