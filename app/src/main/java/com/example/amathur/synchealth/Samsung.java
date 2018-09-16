@@ -13,6 +13,7 @@ import com.samsung.android.sdk.healthdata.HealthDataStore;
 import com.samsung.android.sdk.healthdata.HealthPermissionManager;
 import com.samsung.android.sdk.healthdata.HealthResultHolder;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashSet;
@@ -30,12 +31,12 @@ public class Samsung {
     private Set<HealthPermissionManager.PermissionKey> mKeySet;
     private HealthResultHolder<HealthDataResolver.ReadResult> result;
     private HealthDataService healthDataService;
-    private Activity mInstance;
+    private WeakReference<Activity> mInstance;
     private String APP_TAG = "SYNCHEALTH-SAMSUNG";
-    SyncThread sThread = new SyncThread();
+    private SyncThread sThread = new SyncThread();
 
     Samsung(Activity mInstance){
-        this.mInstance = mInstance;
+        this.mInstance = new WeakReference<>(mInstance);
         mKeySet = new HashSet<>();
 //        mKeySet.add(new HealthPermissionManager.PermissionKey("com.samsung.shealth.step_daily_trend", HealthPermissionManager.PermissionType.READ));
         mKeySet.add(new HealthPermissionManager.PermissionKey(HealthConstants.StepCount.HEALTH_DATA_TYPE, HealthPermissionManager.PermissionType.READ));
@@ -59,9 +60,10 @@ public class Samsung {
                 Map<HealthPermissionManager.PermissionKey, Boolean> resultMap = result.getResultMap();
                 if (resultMap.containsValue(Boolean.FALSE)) {
                     Log.d(APP_TAG, "Permission Faliure");
-                } else {
-                    // Get the current step count and display it
                 }
+//                else {
+//                    // Get the current step count and display it
+//                }
             };
 
     private final HealthDataStore.ConnectionListener mConnectionListener = new HealthDataStore.ConnectionListener() {
@@ -78,11 +80,12 @@ public class Samsung {
                 if (resultMap.containsValue(Boolean.FALSE)) {
                     Log.d(APP_TAG, "Permission for Samsung health failed retrying");
                     // Request the permission for reading step counts if it is not acquired
-                    pmsManager.requestPermissions(mKeySet, mInstance).setResultListener(mPermissionListener);
-                } else {
-                    // Get the current step count and display it
-//                    readSamsungData();
+                    pmsManager.requestPermissions(mKeySet, mInstance.get()).setResultListener(mPermissionListener);
                 }
+//                else {
+//                    // Get the current step count and display it
+////                    readSamsungData();
+//                }
             } catch (Exception e) {
                 Log.e(APP_TAG, e.getClass().getName() + " - " + e.getMessage());
                 Log.e(APP_TAG, "Permission setting fails.");
@@ -102,7 +105,7 @@ public class Samsung {
 
         private void showConnectionFailureDialog(HealthConnectionErrorResult error) {
 
-            AlertDialog.Builder alert = new AlertDialog.Builder(mInstance);
+            AlertDialog.Builder alert = new AlertDialog.Builder(mInstance.get());
             mConnError = error;
             String message = "Connection with Samsung Health is not available";
 
@@ -130,7 +133,7 @@ public class Samsung {
 
             alert.setPositiveButton("OK", (dialog, id) -> {
                 if (mConnError.hasResolution()) {
-                    mConnError.resolve(mInstance);
+                    mConnError.resolve(mInstance.get());
                 }
             });
 
@@ -142,58 +145,36 @@ public class Samsung {
         }
     };
 
-    private HealthDataResolver.ReadRequest buildTodayStepCountReadRequest() {
-
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.AM_PM, Calendar.AM);
-        cal.set(Calendar.HOUR, 0);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        long startTime = cal.getTimeInMillis();
+    private HealthDataResolver.ReadRequest buildTodayStepCountReadRequest(long startTime) {
 
         HealthDataResolver.Filter filter = HealthDataResolver.Filter.greaterThan("start_time", startTime);
 
-        HealthDataResolver.ReadRequest request =
-                new HealthDataResolver.ReadRequest.Builder()
-                        .setDataType(HealthConstants.StepCount.HEALTH_DATA_TYPE)
-                        .setFilter(filter)
-                        .build();
-        return request;
+        return new HealthDataResolver.ReadRequest.Builder()
+                .setDataType(HealthConstants.StepCount.HEALTH_DATA_TYPE)
+                .setFilter(filter)
+                .build();
     }
 
-    private HealthDataResolver.ReadRequest buildTodayHearRateReadRequest() {
-
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.AM_PM, Calendar.AM);
-        cal.set(Calendar.HOUR, 0);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        long startTime = cal.getTimeInMillis();
+    private HealthDataResolver.ReadRequest buildTodayHearRateReadRequest(long startTime) {
 
         HealthDataResolver.Filter filter = HealthDataResolver.Filter.greaterThan("start_time", startTime);
 
-        HealthDataResolver.ReadRequest request =
-                new HealthDataResolver.ReadRequest.Builder()
-                        .setDataType(HealthConstants.HeartRate.HEALTH_DATA_TYPE)
-                        .setFilter(filter)
-                        .build();
-        return request;
+        return new HealthDataResolver.ReadRequest.Builder()
+                .setDataType(HealthConstants.HeartRate.HEALTH_DATA_TYPE)
+                .setFilter(filter)
+                .build();
     }
 
-    public List<HealthData> getAllStepsDataPoints() throws InterruptedException {
+    public List<HealthData> getAllStepsDataPoints(long startTime) throws InterruptedException {
         List<HealthData> dps = new ArrayList<>();
-        HealthDataResolver.ReadRequest query = buildTodayStepCountReadRequest();
-        HealthDataResolver dataResolver = new HealthDataResolver(mStore, sThread.mHandler);
+        HealthDataResolver.ReadRequest query = buildTodayStepCountReadRequest(startTime);
+        HealthDataResolver dataResolver = new HealthDataResolver(mStore, SyncThread.mHandler);
         AtomicBoolean done = new AtomicBoolean(false);
         try{
             result = dataResolver.read(query);
             result.setResultListener(result -> {
-                Iterator<HealthData> itr = result.iterator();
-                while(itr.hasNext()){
-                    HealthData data = itr.next();
-                    if(data.getString("deviceuuid").equals("D1Umv4y7BL"))
+                for (HealthData data : result) {
+                    if (data.getString("deviceuuid").equals("D1Umv4y7BL"))
                         dps.add(data);
                 }
                 done.set(true);
@@ -206,24 +187,22 @@ public class Samsung {
             Log.d(APP_TAG, e.getMessage());
         }
         synchronized (done) {
-            while (done.get() == false) {
+            while (!done.get()) {
                 done.wait();
             }
         }
         return dps;
     }
 
-    public List<HealthData> getAllHRDataPoints() throws InterruptedException {
+    public List<HealthData> getAllHRDataPoints(long startTime) throws InterruptedException {
         List<HealthData> dps = new ArrayList<>();
-        HealthDataResolver.ReadRequest query = buildTodayHearRateReadRequest();
-        HealthDataResolver dataResolver = new HealthDataResolver(mStore, sThread.mHandler);
+HealthDataResolver.ReadRequest query = buildTodayHearRateReadRequest(startTime);
+        HealthDataResolver dataResolver = new HealthDataResolver(mStore, SyncThread.mHandler);
         AtomicBoolean done = new AtomicBoolean(false);
         try{
             result = dataResolver.read(query);
             result.setResultListener(result -> {
-                Iterator<HealthData> itr = result.iterator();
-                while(itr.hasNext()){
-                    HealthData data = itr.next();
+                for (HealthData data : result) {
                     dps.add(data);
                 }
                 done.set(true);
@@ -236,7 +215,7 @@ public class Samsung {
             Log.d(APP_TAG, e.getMessage());
         }
         synchronized (done) {
-            while (done.get() == false) {
+            while (!done.get()) {
                 done.wait();
             }
         }

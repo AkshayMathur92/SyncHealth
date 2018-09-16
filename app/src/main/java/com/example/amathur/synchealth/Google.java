@@ -15,8 +15,10 @@ import com.google.android.gms.fitness.data.DataType;
 import com.google.android.gms.fitness.data.Field;
 import com.google.android.gms.tasks.Task;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static android.icu.lang.UCharacter.GraphemeClusterBreak.T;
 import static com.google.android.gms.fitness.data.DataSource.TYPE_RAW;
@@ -26,17 +28,18 @@ public class Google {
     //Google
     private static final String AUTH_PENDING = "auth_state_pending";
     private boolean authInProgress = false;
-    String APP_TAG = "SYNCHEALTH-GOOGLE";
-    Activity mInstance;
-    HistoryClient historyClient;
+    private String APP_TAG = "SYNCHEALTH-GOOGLE";
+    private WeakReference<Activity> mInstance;
+    private HistoryClient historyClient;
     public static DataSource stepDataSource;
     public static DataSource heartrateDataSource;
     public static DataSource calorieDataSource;
     public static DataSource distanceDataSource;
     public static DataSource speedDataSource;
+    private int GOOGLE_PERMISSION = 347; // in octal 0533
 
-    Google(Activity mInstance, Bundle savedInstanceState){
-        this.mInstance = mInstance;
+    Google(Activity mInt, Bundle savedInstanceState){
+        mInstance = new WeakReference<>(mInt);
         try {
 
             if (savedInstanceState != null) {
@@ -52,41 +55,41 @@ public class Google {
                     .addDataType(DataType.TYPE_SPEED, FitnessOptions.ACCESS_WRITE)
                     .build();
 
-            if (!GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(mInstance), fitnessOptions)) {
+            if (!GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(mInstance.get()), fitnessOptions)) {
                 GoogleSignIn.requestPermissions(
-                        mInstance, // your activity
-                        0533,
-                        GoogleSignIn.getLastSignedInAccount(mInstance),
+                        mInstance.get(),
+                        GOOGLE_PERMISSION,
+                        GoogleSignIn.getLastSignedInAccount(mInstance.get()),
                         fitnessOptions);
             }
-            historyClient = Fitness.getHistoryClient(mInstance, GoogleSignIn.getLastSignedInAccount(mInstance));
+            historyClient = Fitness.getHistoryClient(mInstance.get(), Objects.requireNonNull(GoogleSignIn.getLastSignedInAccount(mInstance.get())));
 
             stepDataSource = (new DataSource.Builder())
-                    .setAppPackageName(mInstance)
+                    .setAppPackageName(mInstance.get())
                     .setDataType(DataType.TYPE_STEP_COUNT_DELTA)
                     .setType(TYPE_RAW)
                     .build();
 
             heartrateDataSource = (new DataSource.Builder())
-                    .setAppPackageName(mInstance)
+                    .setAppPackageName(mInstance.get())
                     .setDataType(DataType.TYPE_HEART_RATE_BPM)
                     .setType(TYPE_RAW)
                     .build();
 
             calorieDataSource = (new DataSource.Builder())
-                    .setAppPackageName(mInstance)
+                    .setAppPackageName(mInstance.get())
                     .setDataType(DataType.TYPE_CALORIES_EXPENDED)
                     .setType(TYPE_RAW)
                     .build();
 
             distanceDataSource = (new DataSource.Builder())
-                    .setAppPackageName(mInstance)
+                    .setAppPackageName(mInstance.get())
                     .setDataType(DataType.TYPE_DISTANCE_DELTA)
                     .setType(TYPE_RAW)
                     .build();
 
             speedDataSource = (new DataSource.Builder())
-                    .setAppPackageName(mInstance)
+                    .setAppPackageName(mInstance.get())
                     .setDataType(DataType.TYPE_SPEED)
                     .setType(TYPE_RAW)
                     .build();
@@ -116,9 +119,13 @@ public class Google {
         addData(googledata, speedDataSource, " Speed ");
     }
 
-    public void addData(List<DataPoint> googledata, DataSource dataSource, String message){
+    private void addData(List<DataPoint> googledata, DataSource dataSource, String message){
         List<List<DataPoint>> list_list_dp;
-        if(googledata.size() > 1000) {
+        if(googledata.isEmpty()){
+            Log.d(APP_TAG, "Empty DataSet ! with " + message);
+            return;
+        }
+        else if(googledata.size() > 1000) {
             list_list_dp = getBatches(googledata, 1000);
         }
         else{
@@ -135,11 +142,11 @@ public class Google {
                 }
             }
             Task<Void> response = historyClient.insertData(dataSet);
-            response.addOnCompleteListener(task -> Log.d(APP_TAG, "Response of adding " + message + ((task.isSuccessful())? "true" : task.getException().toString())));
+            response.addOnCompleteListener(task -> Log.d(APP_TAG, "Response of adding " + message + (task.isSuccessful())));
         }
     }
 
-    public static <T> List<List<T>> getBatches(List<T> collection,int batchSize){
+    private static <T> List<List<T>> getBatches(List<T> collection, int batchSize){
         int i = 0;
         List<List<T>> batches = new ArrayList<>();
         while(i<collection.size()){
