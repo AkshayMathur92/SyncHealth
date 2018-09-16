@@ -8,14 +8,14 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.util.Log;
 
+import java.util.Objects;
+
 public class MySyncService extends JobService{
 
     private static final String APP_TAG = "SYNCHEALTH-SYNCSERVICE";
 
     private static JobInfo jobInfo;
-    final Runnable mWorker = () -> {
-        Update.update();
-    };
+    final Runnable mWorker = Update::update;
 
     static {
         ComponentName serviceComponent = new ComponentName("com.example.amathur.synchealth", MySyncService.class.getName());
@@ -26,7 +26,7 @@ public class MySyncService extends JobService{
     @Override
     public boolean onStartJob(JobParameters params) {
         Log.d(APP_TAG, "Sync Job has been scheduled");
-        SyncThread.mHandler.post(mWorker);
+        LocalThreadPool.syncHandler.post(mWorker);
         return true;
     }
 
@@ -37,6 +37,6 @@ public class MySyncService extends JobService{
 
     public static void scheduleJob(Context context){
         JobScheduler jobScheduler = context.getSystemService(JobScheduler.class);
-        jobScheduler.schedule(jobInfo);
+        Objects.requireNonNull(jobScheduler).schedule(jobInfo);
     }
 }

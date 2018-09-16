@@ -15,9 +15,7 @@ import com.samsung.android.sdk.healthdata.HealthResultHolder;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,10 +28,8 @@ public class Samsung {
     private HealthConnectionErrorResult mConnError;
     private Set<HealthPermissionManager.PermissionKey> mKeySet;
     private HealthResultHolder<HealthDataResolver.ReadResult> result;
-    private HealthDataService healthDataService;
     private WeakReference<Activity> mInstance;
     private String APP_TAG = "SYNCHEALTH-SAMSUNG";
-    private SyncThread sThread = new SyncThread();
 
     Samsung(Activity mInstance){
         this.mInstance = new WeakReference<>(mInstance);
@@ -41,14 +37,13 @@ public class Samsung {
 //        mKeySet.add(new HealthPermissionManager.PermissionKey("com.samsung.shealth.step_daily_trend", HealthPermissionManager.PermissionType.READ));
         mKeySet.add(new HealthPermissionManager.PermissionKey(HealthConstants.StepCount.HEALTH_DATA_TYPE, HealthPermissionManager.PermissionType.READ));
         mKeySet.add(new HealthPermissionManager.PermissionKey(HealthConstants.HeartRate.HEALTH_DATA_TYPE, HealthPermissionManager.PermissionType.READ));
-        healthDataService = new HealthDataService();
+        HealthDataService healthDataService = new HealthDataService();
 
         try {
             healthDataService.initialize(mInstance);
             mStore = new HealthDataStore(mInstance, mConnectionListener);
             // Request the connection to the health data store
             mStore.connectService();
-            sThread.start();
         }catch (Exception e) {
             e.printStackTrace();
         }
@@ -168,7 +163,7 @@ public class Samsung {
     public List<HealthData> getAllStepsDataPoints(long startTime) throws InterruptedException {
         List<HealthData> dps = new ArrayList<>();
         HealthDataResolver.ReadRequest query = buildTodayStepCountReadRequest(startTime);
-        HealthDataResolver dataResolver = new HealthDataResolver(mStore, SyncThread.mHandler);
+        HealthDataResolver dataResolver = new HealthDataResolver(mStore, LocalThreadPool.callbackHandler);
         AtomicBoolean done = new AtomicBoolean(false);
         try{
             result = dataResolver.read(query);
@@ -197,7 +192,7 @@ public class Samsung {
     public List<HealthData> getAllHRDataPoints(long startTime) throws InterruptedException {
         List<HealthData> dps = new ArrayList<>();
 HealthDataResolver.ReadRequest query = buildTodayHearRateReadRequest(startTime);
-        HealthDataResolver dataResolver = new HealthDataResolver(mStore, SyncThread.mHandler);
+        HealthDataResolver dataResolver = new HealthDataResolver(mStore, LocalThreadPool.callbackHandler);
         AtomicBoolean done = new AtomicBoolean(false);
         try{
             result = dataResolver.read(query);

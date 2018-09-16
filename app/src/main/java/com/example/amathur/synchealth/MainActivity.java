@@ -10,23 +10,20 @@ public class MainActivity
         AppCompatActivity {
 
     public static final String APP_TAG = "SYNCHEALTH";
-    private static MainActivity mInstance = null;
-    private Button sync_button ;
-    public static Context mainContext;
+
+    static {
+        LocalThreadPool.start();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        mainContext = this.getBaseContext();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mInstance = this;
-        Update.samsung = new Samsung(mInstance);
-        Update.googleFit = new Google(mInstance, savedInstanceState);
+        Update.samsung = new Samsung(this);
+        Update.googleFit = new Google(this, savedInstanceState);
 
-        sync_button = findViewById(R.id.sync_button);
-        sync_button.setOnClickListener(v -> {
-            Update.update();
-        });
+        Button sync_button = findViewById(R.id.sync_button);
+        sync_button.setOnClickListener(v -> LocalThreadPool.syncHandler.post(Update::update));
 
         MySyncService.scheduleJob(this);
     }
