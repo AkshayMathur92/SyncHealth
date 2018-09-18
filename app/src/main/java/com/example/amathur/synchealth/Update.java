@@ -20,7 +20,8 @@ class Update {
 
     static Samsung samsung;
     static Google googleFit;
-    private static long last_update;
+    public static long last_update;
+    public static MainActivity.SyncListener syncListener;
 
     static {
         Calendar cal = Calendar.getInstance();
@@ -48,7 +49,9 @@ class Update {
             Calendar cal = Calendar.getInstance();
             cal.set(Calendar.MINUTE, 0);
             last_update = cal.getTimeInMillis();
-
+            if(syncListener!=null){
+                syncListener.onSync();
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

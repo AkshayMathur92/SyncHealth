@@ -3,7 +3,13 @@ package com.example.amathur.synchealth;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.util.TimeUtils;
 import android.widget.Button;
+import android.widget.TextView;
+
+import java.text.Format;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class MainActivity
         extends
@@ -15,10 +21,15 @@ public class MainActivity
         LocalThreadPool.start();
     }
 
+    public interface SyncListener{
+        void onSync();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Update.syncListener = (() -> runOnUiThread(() -> ((TextView)findViewById(R.id.LastLog)).setText(convertTime(Update.last_update))));
         Update.samsung = new Samsung(this);
         Update.googleFit = new Google(this, savedInstanceState);
 
@@ -33,5 +44,21 @@ public class MainActivity
         Log.d(APP_TAG,"onDestroy Connection Closed ");
         Update.samsung.disconnect();
         super.onDestroy();
+    }
+
+    @Override
+    public void onResume(){
+        Log.d(APP_TAG,"onResume");
+        updateTime();
+        super.onResume();
+    }
+
+    public void updateTime(){
+        ((TextView)findViewById(R.id.LastLog)).setText(convertTime(Update.last_update));
+    }
+    private static String convertTime(long time){
+        Date date = new Date(time);
+        Format format = new SimpleDateFormat("yyyy MM dd HH:mm:ss");
+        return format.format(date);
     }
 }
