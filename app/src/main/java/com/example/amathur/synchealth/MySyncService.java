@@ -32,12 +32,13 @@ public class MySyncService extends JobService{
     public boolean onStartJob(JobParameters params) {
         Log.d(APP_TAG, "Sync Job has been scheduled");
         LocalThreadPool.syncHandler.post(mWorker);
+        jobFinished(params, true);
         return true;
     }
 
     @Override
     public boolean onStopJob(JobParameters params) {
-        return false;
+        return true;
     }
 
     public static void scheduleJob(Context context){

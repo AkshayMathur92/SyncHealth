@@ -2,6 +2,7 @@ package com.example.amathur.synchealth;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.widget.Button;
 
 public class MainActivity
@@ -29,6 +30,7 @@ public class MainActivity
 
     @Override
     public void onDestroy() {
+        Log.d(APP_TAG,"onDestroy Connection Closed ");
         Update.samsung.disconnect();
         super.onDestroy();
     }

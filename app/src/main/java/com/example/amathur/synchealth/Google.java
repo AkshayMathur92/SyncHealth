@@ -21,7 +21,7 @@ import java.util.Objects;
 
 import static com.google.android.gms.fitness.data.DataSource.TYPE_RAW;
 
-class Google {
+public class Google {
 
     //Google
     private static final String AUTH_PENDING = "auth_state_pending";
